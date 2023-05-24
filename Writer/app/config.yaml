@@ -1,0 +1,8 @@
+restful:
+  host: 0.0.0.0
+  port: 8080
+logging:
+  logging_folder: 'log'
+  logging_filename: license-plate-detection.log
+static_files:
+  potential: 'static-files/potential-license-plate'

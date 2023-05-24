@@ -13,6 +13,7 @@ __credits__ = ''
 __description__ = 'Reader class'
 
 import os
+import sys
 import cv2
 import time
 import torch
@@ -37,19 +38,29 @@ class Reader:
         self.__setup_logging(verbosity, logging_path)
 
     def __setup_logging(self, verbosity, path):
-        format = "%(asctime)s %(filename)s:%(lineno)d %(levelname)s - %(message)s"
-        filename=path
+        format = "%(asctime)s %(filename)s:%(lineno)d %(levelname)s - %(message)s" #formato del messaggio
+        #filename = path
         datefmt = "%d/%m/%Y %H:%M:%S"
         level = logging.INFO
         if (verbosity):
             level = logging.DEBUG
-        logging.basicConfig(filename=filename, filemode='a', format=format, level=level, datefmt=datefmt)
+        
+        ''' definisco un oggetto console handler tramite la classe logging.Streamhandler
+         setto il livello del log, ed utilizzo metodo setformatter per definire il formato dei messaggi da stampare
+          nello stdout   '''
+        
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(level)
+        console_handler.setFormatter(logging.Formatter(format,datefmt))
+
+        logging.basicConfig(stream=sys.stdout, format=format, level=level, datefmt=datefmt)
 
     
     def setup(self):
         if not os.path.exists(self.__static_files_detection):
             os.makedirs(self.__static_files_detection)
 
+        print("creo il thread")
         self.__reader = threading.Thread(
             target = self.__reader_job, 
             args = ()
@@ -58,16 +69,15 @@ class Reader:
     def __reader_job(self):
         while True:
             if not self.__potential_folder_is_empty():
+                print("acquisizione lock")
                 self.__mutex.acquire()
                 oldest_frame_path = self.__oldest()
 
                 frame =  self.__get_frame(oldest_frame_path)
-
                 detected, _ = self.__detection(frame, self.__model, self.__labels)
                 os.remove(oldest_frame_path)
 
                 self.__mutex.release()
-
                 image = Image.fromarray(detected)
                 filename = os.path.basename(oldest_frame_path)
                 absolute_path = '%s/%s' % (self.__static_files_detection, filename)
@@ -186,8 +196,17 @@ class Reader:
                     class_index = cls
                     object_name = names[int(cls)]
                     
+                    crop_name=self.__oldest()
+                    crop_name = os.path.basename(crop_name)
+                    current_directory = os.getcwd()
+                    directory = self.__static_files_detection
+                    os.chdir(directory)
                     detected_plate = frame[:,:,y1:y2, x1:x2].squeeze().permute(1, 2, 0).cpu().numpy()
-                    # cv2.imshow("Crooped Plate ",detected_plate)
+                    crop = out[y1:y2, x1:x2]
+                    print(crop,' crop')
+                    print(detected_plate,' detected plate')
+                    cv2.imwrite("crop_"+crop_name, crop)
+                    os.chdir(current_directory)
 
                     #rect_size= (detected_plate.shape[0]*detected_plate.shape[1])
                     c = int(cls)  # integer class

@@ -16,7 +16,6 @@ import os
 import yaml
 import argparse
 from threading import Lock
-from logic.writer import Writer
 from logic.reader import Reader
 
 def main():
@@ -48,19 +47,20 @@ def main():
     if not os.path.exists(logdir_name):
         os.makedirs(logdir_name)
 
-    writer = setup_writer(config['restful'], config['static_files'], mutex, verbosity, logging_path)
+    #writer = setup_writer(config['restful'], config['static_files'], mutex, verbosity, logging_path)
     reader = setup_reader(config['detection'], config['static_files'], mutex, verbosity, logging_path)
-    writer.start()
+    #writer.start()
     reader.start()
-
+'''
 def setup_writer(config, config_files, mutex, verbosity, logging_path):
     writer = Writer(config['host'], config['port'],
         config_files['potential'], mutex, verbosity, logging_path)
     writer.setup()
-    return writer
+    return writer'''
 
 def setup_reader(config, config_files, mutex, verbosity, logging_path):
     reader = Reader(config_files['potential'], config_files['detected'], config['model_path'], mutex, verbosity, logging_path)
+    print("chiamo setup")
     reader.setup()
     return reader
 
