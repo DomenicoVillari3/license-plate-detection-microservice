@@ -25,6 +25,9 @@ import torch.backends.cudnn as cudnn
 from models.experimental import attempt_load
 from utils.general import non_max_suppression
 from utils.params import Parameters
+from flask import Flask,request,make_response
+from flask_api import status
+from werkzeug.utils import secure_filename
 
 class Reader:
 
@@ -33,6 +36,7 @@ class Reader:
         self.__static_files_detection = static_files_detection
         self.__mutex = mutex
         self.__reader = None
+        self.__flaskServer= None
         self.__params = Parameters(model_path)
         self.__model, self.__labels = self.__load_yolov5_model()
         self.__setup_logging(verbosity, logging_path)
@@ -59,33 +63,87 @@ class Reader:
     def setup(self):
         if not os.path.exists(self.__static_files_detection):
             os.makedirs(self.__static_files_detection)
+        if not os.path.exists(self.__static_files_potential):
+            os.makedirs(self.__static_files_potential)
 
         print("creo il thread")
+        self.__flaskServer=threading.Thread(
+            target=self._receive,
+            args=('0.0.0.0','8080',True)
+            )
+        
         self.__reader = threading.Thread(
             target = self.__reader_job, 
             args = ()
         )
 
+        print('inizio dal flask server ')
+        self.__flaskServer.start()
+
+
     def __reader_job(self):
         while True:
+            #self._receive('0.0.0.0','8080',True)
             if not self.__potential_folder_is_empty():
-                print("acquisizione lock")
                 self.__mutex.acquire()
+                print('inizio reading ')
+                print("acquisizione lock da parte del reading ")
+                
                 oldest_frame_path = self.__oldest()
 
+                print('FILE: ',oldest_frame_path)
                 frame =  self.__get_frame(oldest_frame_path)
                 detected, _ = self.__detection(frame, self.__model, self.__labels)
                 os.remove(oldest_frame_path)
 
-                self.__mutex.release()
+                #self.__mutex.release()
                 image = Image.fromarray(detected)
                 filename = os.path.basename(oldest_frame_path)
                 absolute_path = '%s/%s' % (self.__static_files_detection, filename)
                 image.save(absolute_path)
                 time.sleep(0.1)       
+                print('rilascio mutex ')
+                print('ridò controllo a flask')
+                self.__mutex.release()
+
+    def _receive(self,host,port,verbosity):
+        self.__mutex.acquire()
+        print('mutex acquisito dal server e metto in ascolto')
+        app = Flask(__name__)
+        app.add_url_rule('/api/v1/frame-download', 'frame-download', self.__frame_download, methods=['POST'])
+        print(host, port)
+        app.run(host=host, port=port, debug=verbosity, threaded=True, use_reloader=False)
+
+
+    def __frame_download(self):
+        if not self.__detected_folder_is_empty():
+            self.__mutex.acquire()
+        if request.method == 'POST': #controllliamo se è stata effettuata una richiesta di post
+            if 'form_field_name' not in request.files: #controllo se il campo upload è richiesto
+                response = make_response("File not found", status.HTTP_400_BAD_REQUEST) 
+                print ('ERRORE')
+            print('salvo file inviato da writer')
+            file = request.files['form_field_name']
+            print("/n file ",file,"filename ",file.filename)
+            filename = secure_filename(file.filename) 
+            absolute_path = '%s/%s' % (self.__static_files_potential, filename) # self.__static_files rappresenta la directory in cui verrà salvato il file. POTENTIAL_STATIC_FILE
+            #self.__mutex.acquire() #prendo il mutex
+            file.save(absolute_path)    #faccio la scrittura
+            #self.__mutex.release() #rilascia il mutex
+            response = make_response("File is stored", status.HTTP_201_CREATED)
+            print('flask rilascia il mutex')
+            self.__mutex.release()
+            print('aspetto il reader')
+          
+            
+
 
     def __potential_folder_is_empty(self):
         path = self.__static_files_potential
+        return True if not len(os.listdir(path)) else False
+    
+    def __detected_folder_is_empty(self):
+        path = self.__static_files_detection
         return True if not len(os.listdir(path)) else False
 
     def __oldest(self):

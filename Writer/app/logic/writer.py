@@ -24,6 +24,7 @@ import os
 import sys
 import logging
 import threading
+import requests
 from flask_api import status
 from flask import Flask, request, make_response
 from werkzeug.utils import secure_filename
@@ -47,6 +48,7 @@ class Writer:
         self.__writer = None
         self.__verbosity = verbosity
         self.__setup_logging(verbosity, logging_path)
+    
 
     '''vado a definire il formato delle info inserite nel file di log'''
     def __setup_logging(self, verbosity, path):
@@ -77,8 +79,7 @@ class Writer:
             target = self.__writer_job, 
             args = (self.__host, self.__port, self.__verbosity)
         )
-
-    
+        
     def __writer_job(self, host, port, verbosity):
         app = Flask(__name__)
 
@@ -99,6 +100,11 @@ class Writer:
                 self.__mutex.acquire() #prendo il mutex
                 file.save(absolute_path)    #faccio la scrittura
                 self.__mutex.release() #rilascia il mutex
+                print('invio immagine scaricata')
+                test_file=open(absolute_path,'rb')
+                test_url = "http://172.17.0.3:8080/api/v1/frame-download"
+                test_response = requests.post(test_url, files = {"form_field_name": test_file})
+                print(test_response)
                 response = make_response("File is stored", status.HTTP_201_CREATED)
             return response
 
