@@ -14,7 +14,8 @@ RUN  apt upgrade -y
 RUN echo "|--> Install Python basics" 
 RUN apt install -y python3.10
 RUN apt install -y python3-pip
-
+#RUN pip3 install xyz --break-system-packages
+#RUN pip3 install --upgrade pip
 
 COPY requirements.txt /opt/app/requirements.txt
 

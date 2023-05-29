@@ -1,0 +1,1 @@
+docker run -it -d -p 5001:8080 -v ~/static-files:/opt/app/static-files --name writer img_writer

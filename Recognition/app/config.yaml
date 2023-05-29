@@ -7,6 +7,5 @@ logging:
 static_files:
   potential: 'static-files/potential-license-plate'
   detected: 'static-files/detected-license-plate'
-  history: 'static-files/history'
-detection:
-  model_path: model/best.pt
+
+

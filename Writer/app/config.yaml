@@ -6,3 +6,5 @@ logging:
   logging_filename: license-plate-detection.log
 static_files:
   potential: 'static-files/potential-license-plate'
+
+

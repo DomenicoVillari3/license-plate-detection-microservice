@@ -17,7 +17,7 @@ import yaml
 import argparse
 from threading import Lock
 #from logic.writer import Writer
-from logic.reader import Reader
+from logic.recognition import Recognition
 
 def main():
     description = ('%s\n%s' % (__author__, __description__))
@@ -48,17 +48,14 @@ def main():
     if not os.path.exists(logdir_name):
         os.makedirs(logdir_name)
 
-
-    reader = setup_reader(config['detection'], config['static_files'],mutex, verbosity, logging_path,)
-    
-    reader.start()
+    recognition = setup_recognition(config, mutex, verbosity, logging_path)
+    recognition.start()
 
 
-
-def setup_reader(config, config_files, mutex, verbosity, logging_path):
-    reader = Reader(config_files['potential'], config_files['detected'], config_files['history'],config['model_path'], mutex, verbosity, logging_path)
-    reader.setup()
-    return reader
+def setup_recognition(config, mutex, verbosity, logging_path):
+    recognition = Recognition(config['static_files']['detected'], logging_path, verbosity, config['restful']['host'],config['restful']['port'],mutex)
+    recognition.setup()
+    return recognition
 
 if __name__ == '__main__':
     main()

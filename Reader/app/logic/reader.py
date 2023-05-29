@@ -19,6 +19,7 @@ import time
 import torch
 import logging
 import threading
+import requests
 import numpy as np
 from PIL import Image
 import torch.backends.cudnn as cudnn
@@ -31,9 +32,10 @@ from werkzeug.utils import secure_filename
 
 class Reader:
 
-    def __init__(self, static_files_potential, static_files_detection, model_path, mutex, verbosity, logging_path) -> None:
+    def __init__(self, static_files_potential, static_files_detection, static_files_history, model_path, mutex, verbosity, logging_path) -> None:
         self.__static_files_potential = static_files_potential
         self.__static_files_detection = static_files_detection
+        self.__static_files_history=static_files_history
         self.__mutex = mutex
         self.__reader = None
         self.__flaskServer= None
@@ -61,14 +63,24 @@ class Reader:
 
     
     def setup(self):
+        if not os.path.exists(self.__static_files_history):
+            os.makedirs(self.__static_files_history)
+
         if not os.path.exists(self.__static_files_detection):
             os.makedirs(self.__static_files_detection)
+        if len(os.listdir(self.__static_files_detection)):
+            path = self.__static_files_detection
+            for file_name in os.listdir(path):
+                # construct full file path
+                file = path +"/"+file_name
+                os.remove(file)
+                    
         if not os.path.exists(self.__static_files_potential):
             os.makedirs(self.__static_files_potential)
 
         print("creo il thread")
         self.__flaskServer=threading.Thread(
-            target=self._receive,
+            target=self.__receive,
             args=('0.0.0.0','8080',True)
             )
         
@@ -83,7 +95,6 @@ class Reader:
 
     def __reader_job(self):
         while True:
-            #self._receive('0.0.0.0','8080',True)
             if not self.__potential_folder_is_empty():
                 self.__mutex.acquire()
                 print('inizio reading ')
@@ -96,17 +107,24 @@ class Reader:
                 detected, _ = self.__detection(frame, self.__model, self.__labels)
                 os.remove(oldest_frame_path)
 
-                #self.__mutex.release()
                 image = Image.fromarray(detected)
                 filename = os.path.basename(oldest_frame_path)
-                absolute_path = '%s/%s' % (self.__static_files_detection, filename)
+                #absolute_path = '%s/%s' % (self.__static_files_detection, filename)
+                #image.save(absolute_path)
+                print('immagine salvata')
+                absolute_path = '%s/%s' % (self.__static_files_history, filename)
                 image.save(absolute_path)
+                '''test_file=open(absolute_path,'rb')
+               test_url = "http://172.17.0.4:8080/api/v1/detected-frame-download"
+                test_response = requests.post(test_url, files = {"file-detected": test_file})
+                test_response = make_response("File is stored", status.HTTP_201_CREATED)
+                print(test_response)'''
                 time.sleep(0.1)       
                 print('rilascio mutex ')
                 print('ridò controllo a flask')
                 self.__mutex.release()
 
-    def _receive(self,host,port,verbosity):
+    def __receive(self,host,port,verbosity):
         self.__mutex.acquire()
         print('mutex acquisito dal server e metto in ascolto')
         app = Flask(__name__)
@@ -130,7 +148,6 @@ class Reader:
             #self.__mutex.acquire() #prendo il mutex
             file.save(absolute_path)    #faccio la scrittura
             #self.__mutex.release() #rilascia il mutex
-            response = make_response("File is stored", status.HTTP_201_CREATED)
             print('flask rilascia il mutex')
             self.__mutex.release()
             print('aspetto il reader')
@@ -257,12 +274,14 @@ class Reader:
                     crop_name=self.__oldest()
                     crop_name = os.path.basename(crop_name)
                     current_directory = os.getcwd()
-                    directory = self.__static_files_detection
-                    os.chdir(directory)
+                    os.chdir(self.__static_files_detection)
                     detected_plate = frame[:,:,y1:y2, x1:x2].squeeze().permute(1, 2, 0).cpu().numpy()
-                    crop = out[y1:y2, x1:x2]
-                    print(crop,' crop')
-                    print(detected_plate,' detected plate')
+                    crop = out[(y1-5):(y2-5), x1:x2]
+                    #print(crop,' crop')
+                    #print(detected_plate,' detected plate')
+                    cv2.imwrite("crop_"+crop_name, crop)
+                    os.chdir(current_directory)
+                    os.chdir(self.__static_files_history)
                     cv2.imwrite("crop_"+crop_name, crop)
                     os.chdir(current_directory)
 
