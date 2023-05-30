@@ -25,7 +25,7 @@ class Recognition:
     
     def __setup_logging(self, verbosity, path):
         format = "%(asctime)s %(filename)s:%(lineno)d %(levelname)s - %(message)s" #formato del messaggio
-        #filename = path
+        filename = path
         datefmt = "%d/%m/%Y %H:%M:%S"
         level = logging.INFO
         if (verbosity):
@@ -33,13 +33,13 @@ class Recognition:
         
         ''' definisco un oggetto console handler tramite la classe logging.Streamhandler
          setto il livello del log, ed utilizzo metodo setformatter per definire il formato dei messaggi da stampare
-          nello stdout   '''
-        
-        console_handler = logging.StreamHandler()
+          nello stdout   '''      
+          
+        '''console_handler = logging.StreamHandler()
         console_handler.setLevel(level)
-        console_handler.setFormatter(logging.Formatter(format,datefmt))
+        console_handler.setFormatter(logging.Formatter(format,datefmt))'''
 
-        logging.basicConfig(stream=sys.stdout, format=format, level=level, datefmt=datefmt)
+        logging.basicConfig(filename=filename, filemode='a', format=format, level=level, datefmt=datefmt)
     
     def setup(self):
         if not os.path.exists(self.__static_files_detection):

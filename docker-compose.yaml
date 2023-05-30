@@ -1,0 +1,36 @@
+version: '3'
+services:
+  writer:
+    container_name: writer
+    image: img_writer 
+    volumes:
+      - ~/log/platedetection:/opt/app/log
+    ports:
+      - 5001:8080
+    restart: always
+  
+  reader:
+    container_name: reader
+    image: img_reader
+    volumes:
+      - ~/log/platedetection:/opt/app/log
+      - ~/static-files:/opt/app/static-files
+    ports:
+      - 5002:8080
+    restart: always
+  
+  detection:
+    container_name: detection
+    image: img_rec
+    volumes:
+      - ~/log/platedetection:/opt/app/log
+      - ~/static-files:/opt/app/static-files
+    restart: always
+    depends_on:
+      - reader
+    
+    
+  
+
+
+  

@@ -28,6 +28,7 @@ import requests
 from flask_api import status
 from flask import Flask, request, make_response
 from werkzeug.utils import secure_filename
+import socket
 
 '''definizione della classe writer'''
 
@@ -53,7 +54,7 @@ class Writer:
     '''vado a definire il formato delle info inserite nel file di log'''
     def __setup_logging(self, verbosity, path):
         format = "%(asctime)s %(filename)s:%(lineno)d %(levelname)s - %(message)s" #formato del messaggio
-        #filename = path
+        filename = path
         datefmt = "%d/%m/%Y %H:%M:%S"
         level = logging.INFO
         if (verbosity):
@@ -63,12 +64,11 @@ class Writer:
          setto il livello del log, ed utilizzo metodo setformatter per definire il formato dei messaggi da stampare
           nello stdout   '''
         
-        console_handler = logging.StreamHandler()
+        '''console_handler = logging.StreamHandler()
         console_handler.setLevel(level)
-        console_handler.setFormatter(logging.Formatter(format,datefmt))
+        console_handler.setFormatter(logging.Formatter(format,datefmt))'''
 
-        logging.basicConfig(stream=sys.stdout, format=format, level=level, datefmt=datefmt)
-
+        logging.basicConfig(filename=filename, filemode='a', format=format, level=level, datefmt=datefmt)
 
     def setup(self):
         if not os.path.exists(self.__static_files): #se non esiste il path 
@@ -86,9 +86,17 @@ class Writer:
         app.add_url_rule('/api/v1/frame-upload', 'frame-upload', self.__frame_upload, methods=['POST'])
         print(host, port)
         app.run(host=host, port=port, debug=verbosity, threaded=True, use_reloader=False)
-
-
-
+    
+    def get_ip(self):
+        current_ip = socket.gethostbyname(socket.gethostname())
+        ip_parts = current_ip.split('.')
+        last_digit = int(ip_parts[-1])
+        last_digit += 1
+        last_digit = last_digit % 256
+        ip_parts[-1] = str(last_digit)
+        ip_parts = '.'.join(ip_parts)
+        return ip_parts
+        
     def __frame_upload(self):
         if request.method == 'POST': #controllliamo se è stata effettuata una richiesta di post
             if 'upload' not in request.files: #controllo se il campo upload è richiesto
@@ -101,8 +109,9 @@ class Writer:
                 file.save(absolute_path)    #faccio la scrittura
                 self.__mutex.release() #rilascia il mutex
                 print('invio immagine scaricata')
+                ip_reader = self.get_ip()
                 test_file=open(absolute_path,'rb')
-                test_url = "http://172.17.0.3:8080/api/v1/frame-download"
+                test_url = "http://"+ip_reader+":8080/api/v1/frame-download"
                 test_response = requests.post(test_url, files = {"form_field_name": test_file})
                 print(test_response)
                 response = make_response("File is stored", status.HTTP_201_CREATED)
