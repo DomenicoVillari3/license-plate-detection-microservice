@@ -7,7 +7,7 @@ services:
       - ~/log/platedetection:/opt/app/log
     ports:
       - 5001:8080
-    restart: always
+    restart: unless-stopped
   
   reader:
     container_name: detection
@@ -17,7 +17,7 @@ services:
       - ~/static-files:/opt/app/static-files
     ports:
       - 5002:8080
-    restart: always
+    restart: unless-stopped
   
   detection:
     container_name: recognition
@@ -25,7 +25,7 @@ services:
     volumes:
       - ~/log/platedetection:/opt/app/log
       - ~/static-files:/opt/app/static-files
-    restart: always
+    restart: unless-stopped
     depends_on:
       - reader
     
