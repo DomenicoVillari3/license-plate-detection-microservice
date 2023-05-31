@@ -53,12 +53,8 @@ class Reader:
         
         ''' definisco un oggetto console handler tramite la classe logging.Streamhandler
          setto il livello del log, ed utilizzo metodo setformatter per definire il formato dei messaggi da stampare
-          nello stdout   
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(level)
-        console_handler.setFormatter(logging.Formatter(format,datefmt))
-
-        logging.basicConfig(stream=sys.stdout, format=format, level=level, datefmt=datefmt)'''
+          nel file di log
+        '''
 
         logging.basicConfig(filename=filename, filemode='a', format=format, level=level, datefmt=datefmt)
 
@@ -79,7 +75,6 @@ class Reader:
         if not os.path.exists(self.__static_files_potential):
             os.makedirs(self.__static_files_potential)
 
-        print("creo il thread")
         self.__flaskServer=threading.Thread(
             target=self.__receive,
             args=('0.0.0.0','8080',True)
@@ -90,7 +85,6 @@ class Reader:
             args = ()
         )
 
-        print('inizio dal flask server ')
         self.__flaskServer.start()
 
 
@@ -98,36 +92,24 @@ class Reader:
         while True:
             if not self.__potential_folder_is_empty():
                 self.__mutex.acquire()
-                print('inizio reading ')
-                print("acquisizione lock da parte del reading ")
                 
                 oldest_frame_path = self.__oldest()
 
-                print('FILE: ',oldest_frame_path)
                 frame =  self.__get_frame(oldest_frame_path)
                 detected, _ = self.__detection(frame, self.__model, self.__labels)
                 os.remove(oldest_frame_path)
 
                 image = Image.fromarray(detected)
                 filename = os.path.basename(oldest_frame_path)
-                #absolute_path = '%s/%s' % (self.__static_files_detection, filename)
-                #image.save(absolute_path)
                 print('immagine salvata')
                 absolute_path = '%s/%s' % (self.__static_files_history, filename)
                 image.save(absolute_path)
-                '''test_file=open(absolute_path,'rb')
-                test_url = "http://172.17.0.4:8080/api/v1/detected-frame-download"
-                test_response = requests.post(test_url, files = {"file-detected": test_file})
-                test_response = make_response("File is stored", status.HTTP_201_CREATED)
-                print(test_response)'''
+
                 time.sleep(0.1)       
-                print('rilascio mutex ')
-                print('ridò controllo a flask')
                 self.__mutex.release()
 
     def __receive(self,host,port,verbosity):
         self.__mutex.acquire()
-        print('mutex acquisito dal server e metto in ascolto')
         app = Flask(__name__)
         app.add_url_rule('/api/v1/frame-download', 'frame-download', self.__frame_download, methods=['POST'])
         print(host, port)
@@ -141,20 +123,17 @@ class Reader:
             if 'form_field_name' not in request.files: #controllo se il campo upload è richiesto
                 response = make_response("File not found", status.HTTP_400_BAD_REQUEST) 
                 print ('ERRORE')
-            print('salvo file inviato da writer')
             file = request.files['form_field_name']
             print("/n file ",file,"filename ",file.filename)
             filename = secure_filename(file.filename) 
             absolute_path = '%s/%s' % (self.__static_files_potential, filename) # self.__static_files rappresenta la directory in cui verrà salvato il file. POTENTIAL_STATIC_FILE
-            #self.__mutex.acquire() #prendo il mutex
             file.save(absolute_path)    #faccio la scrittura
             message = "file ricevuto e salvato"
             response = Response(message)
             #self.__mutex.release() #rilascia il mutex
-            print('flask rilascia il mutex')
             self.__mutex.release()
             return response
-            print('aspetto il reader')
+
           
             
 
@@ -179,7 +158,6 @@ class Reader:
         :return: model, names
         """
         model = attempt_load(self.__params.model, map_location=self.__params.device)
-        print("device",self.__params.device)
         stride = int(model.stride.max())  # model stride
         names = model.module.names if hasattr(model, 'module') else model.names  # get class names
 
@@ -281,15 +259,12 @@ class Reader:
                     os.chdir(self.__static_files_detection)
                     detected_plate = frame[:,:,y1:y2, x1:x2].squeeze().permute(1, 2, 0).cpu().numpy()
                     crop = out[y1:y2, x1:x2]
-                    #print(crop,' crop')
-                    #print(detected_plate,' detected plate')
                     cv2.imwrite("crop_"+crop_name, crop)
                     os.chdir(current_directory)
                     os.chdir(self.__static_files_history)
                     cv2.imwrite("crop_"+crop_name, crop)
                     os.chdir(current_directory)
 
-                    #rect_size= (detected_plate.shape[0]*detected_plate.shape[1])
                     c = int(cls)  # integer class
                     label = names[c] if self.__params.hide_conf else f'{names[c]} {conf:.2f}'
 

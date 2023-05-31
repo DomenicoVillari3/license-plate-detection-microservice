@@ -10,7 +10,7 @@ services:
     restart: always
   
   reader:
-    container_name: reader
+    container_name: detection
     image: img_reader
     volumes:
       - ~/log/platedetection:/opt/app/log
@@ -20,7 +20,7 @@ services:
     restart: always
   
   detection:
-    container_name: detection
+    container_name: recognition
     image: img_rec
     volumes:
       - ~/log/platedetection:/opt/app/log

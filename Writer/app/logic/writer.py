@@ -62,11 +62,7 @@ class Writer:
         
         ''' definisco un oggetto console handler tramite la classe logging.Streamhandler
          setto il livello del log, ed utilizzo metodo setformatter per definire il formato dei messaggi da stampare
-          nello stdout   '''
-        
-        '''console_handler = logging.StreamHandler()
-        console_handler.setLevel(level)
-        console_handler.setFormatter(logging.Formatter(format,datefmt))'''
+          nel file di log   '''
 
         logging.basicConfig(filename=filename, filemode='a', format=format, level=level, datefmt=datefmt)
 
@@ -84,7 +80,7 @@ class Writer:
         app = Flask(__name__)
 
         app.add_url_rule('/api/v1/frame-upload', 'frame-upload', self.__frame_upload, methods=['POST'])
-        print(host, port)
+
         app.run(host=host, port=port, debug=verbosity, threaded=True, use_reloader=False)
     
     def get_ip(self):
@@ -108,7 +104,6 @@ class Writer:
                 self.__mutex.acquire() #prendo il mutex
                 file.save(absolute_path)    #faccio la scrittura
                 self.__mutex.release() #rilascia il mutex
-                print('invio immagine scaricata')
                 ip_reader = self.get_ip()
                 test_file=open(absolute_path,'rb')
                 test_url = "http://"+ip_reader+":8080/api/v1/frame-download"
