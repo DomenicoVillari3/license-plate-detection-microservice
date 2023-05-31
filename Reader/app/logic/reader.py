@@ -74,25 +74,30 @@ class Reader:
                     
         if not os.path.exists(self.__static_files_potential):
             os.makedirs(self.__static_files_potential)
+        if len(os.listdir(self.__static_files_potential)):
+            path = self.__static_files_potential
+            for file_name in os.listdir(path):
+                # construct full file path
+                file = path +"/"+file_name
+                os.remove(file)
 
         self.__flaskServer=threading.Thread(
             target=self.__receive,
             args=('0.0.0.0','8080',True)
             )
         
-        self.__reader = threading.Thread(
+        '''self.__reader = threading.Thread(
             target = self.__reader_job, 
             args = ()
-        )
+        )'''
 
         self.__flaskServer.start()
 
 
     def __reader_job(self):
-        while True:
             if not self.__potential_folder_is_empty():
-                self.__mutex.acquire()
-                
+                #self.__mutex.acquire()
+    
                 oldest_frame_path = self.__oldest()
 
                 frame =  self.__get_frame(oldest_frame_path)
@@ -101,12 +106,11 @@ class Reader:
 
                 image = Image.fromarray(detected)
                 filename = os.path.basename(oldest_frame_path)
-                print('immagine salvata')
                 absolute_path = '%s/%s' % (self.__static_files_history, filename)
                 image.save(absolute_path)
 
-                time.sleep(0.1)       
-                self.__mutex.release()
+                time.sleep(0.3)       
+                #self.__mutex.release()
 
     def __receive(self,host,port,verbosity):
         self.__mutex.acquire()
@@ -124,7 +128,6 @@ class Reader:
                 response = make_response("File not found", status.HTTP_400_BAD_REQUEST) 
                 print ('ERRORE')
             file = request.files['form_field_name']
-            print("/n file ",file,"filename ",file.filename)
             filename = secure_filename(file.filename) 
             absolute_path = '%s/%s' % (self.__static_files_potential, filename) # self.__static_files rappresenta la directory in cui verrà salvato il file. POTENTIAL_STATIC_FILE
             file.save(absolute_path)    #faccio la scrittura
@@ -132,6 +135,8 @@ class Reader:
             response = Response(message)
             #self.__mutex.release() #rilascia il mutex
             self.__mutex.release()
+            reader_thread = threading.Thread(target = self.__reader_job, args = ())
+            reader_thread.start()
             return response
 
           

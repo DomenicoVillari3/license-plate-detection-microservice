@@ -9,6 +9,7 @@ from flask_api import status
 from werkzeug.utils import secure_filename
 import requests
 from datetime import datetime
+import time
 
 class Recognition:
     
@@ -56,25 +57,29 @@ class Recognition:
 
     def  __detection_job(self):
         while True:
-            if not self.__detected_folder_is_empty() and self.__oldest():
-                self.__mutex.acquire()
-                oldest_frame_path = self.__oldest()
-                frame =  self.__get_frame(oldest_frame_path)
-                frame_name = os.path.basename(oldest_frame_path)
-                text = pytesseract.image_to_string(frame, lang="eng")
-                if text:
-                    text = text.replace("\n", "")
-                    current_directory=os.getcwd()
-                    os.chdir("/opt/app/static-files")
-                    file = open("detected.txt","a")
-                    file.write(text+"-"+frame_name+"-"+datetime.now().strftime("%d/%m/%Y %H:%M:%S")+"\n \n ")
-                    file.close()
-                    os.chdir(current_directory)
-                    os.chdir(self.__static_files_detection)
-                    os.rename(frame_name,"detected_"+frame_name)
-                    os.chdir(current_directory)
-                self.__mutex.release()
-        
+                if not self.__detected_folder_is_empty() and self.__oldest():
+                    oldest_frame_path = self.__oldest()
+                    frame =  self.__get_frame(oldest_frame_path)
+                    frame_name = os.path.basename(oldest_frame_path)
+                    text = pytesseract.image_to_string(frame, lang="eng")
+                    text = text.replace(" ", "")
+                    if len(text)>1:
+                        text = text.replace("\n", "")
+                        current_directory=os.getcwd()
+                        os.chdir("/opt/app/static-files")
+                        file = open("detected.txt","a")
+                        file.write(text+"-"+frame_name+"-"+datetime.now().strftime("%d/%m/%Y %H:%M:%S")+"\n \n ")
+                        file.close()
+                        os.chdir(current_directory)
+                        os.chdir(self.__static_files_detection)
+                        os.rename(frame_name,"detected_"+frame_name)
+                        os.chdir(current_directory)
+                    else:
+                        current_directory=os.getcwd()
+                        os.chdir(self.__static_files_detection)
+                        os.rename(frame_name,"not_detected_"+frame_name)
+                        os.chdir(current_directory)
+                time.sleep(0.4)
     
     def __detected_folder_is_empty(self):
         path = self.__static_files_detection

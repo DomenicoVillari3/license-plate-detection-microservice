@@ -51,7 +51,7 @@ def main():
 
     reader = setup_reader(config['detection'], config['static_files'],mutex, verbosity, logging_path,)
     
-    reader.start()
+    #reader.start()
 
 
 
