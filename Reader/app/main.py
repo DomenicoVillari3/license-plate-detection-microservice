@@ -49,7 +49,7 @@ def main():
         os.makedirs(logdir_name)
 
 
-    reader = setup_reader(config['detection'], config['static_files'],mutex, verbosity, logging_path,)
+    reader = setup_reader(config['detection'], config['static_files'],mutex, verbosity, logging_path)
     
     #reader.start()
 
