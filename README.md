@@ -40,5 +40,11 @@ The filename is custom and it can be modified in the configuration file.
 ```bash
 tail -f ~/log/platedetection/license-plate-detection.log
 ```
+## How to see recognised plates
+The filename is custom and it can be modified in the configuration file.
+```bash
+tail -f ~/static-files/detected.txt
+```
+
 
 
