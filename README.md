@@ -1,41 +1,44 @@
 # License Plate Detection - Microservices
 
-![license-plate-image](docs/license-plate.jpg)
-
 **Automatic Number Plate Recognition** (ANPR) is the process of reading the characters on the plate with various **optical character recognition** (OCR) methods by separating the plate region on the vehicle image obtained from automatic plate recognition.
 
 This repository forks the [Automatic_Number_Plate_Recognition_YOLO_OCR
-](https://github.com/mftnakrsu/Automatic_Number_Plate_Recognition_YOLO_OCR) one by [mftnakrsu](https://github.com/mftnakrsu) to extract the license plate detection methods and create a microservices deployable as Docker containers.
+](https://github.com/mftnakrsu/Automatic_Number_Plate_Recognition_YOLO_OCR) one by [mftnakrsu](https://github.com/mftnakrsu) to extract the license plate detection methods, adds the license plate characters recognition and create a microservices deployable as Docker containers.
 
-## How to build
-Build the image using the Docker command.
-```bash
-docker build -t lcarnevale/platedetection .
-```
+## How to Build
+Run the *build.sh* script.
 
-Alternativelly, use the *build.sh* script.
 ```bash
 chmod +x build.sh
 ./build.sh
 ```
 
-## How to run
-Run the image as following.
-```bash
-docker run -d --name platedetection \
-    -v /var/log/platedetection:/opt/app/log \
-    -v ~/static-files:/opt/app/static-files \
-    lcarnevale/platedetection
-```
+## How to Run
+Run the *run.sh* script.
 
-Alternativelly, use the *run.sh* script.
 ```bash
 chmod +x run.sh
 ./run.sh
 ```
 
-## How to read the logs
+## How to upload image
+To upload a single image run the *upload-file.sh* script.
+
+```bash
+chmod +x upload-file.sh
+./upload-file.sh /path/file 0.0.0.0 5001
+```
+To upload multiple images from a folder run the *upload-files.sh* script.
+
+```bash
+chmod +x upload-files.sh
+./upload-files.sh /path/folder 0.0.0.0 5001
+```
+
+## How to see logs
 The filename is custom and it can be modified in the configuration file.
 ```bash
-tail -f /var/log/lcarnevale/license-plate-detection.log
+tail -f ~/log/platedetection/license-plate-detection.log
 ```
+
+

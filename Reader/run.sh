@@ -1,0 +1,1 @@
+docker run -d -p 5002:8080 -v ~/static-files:/opt/app/static-files  -v /var/log/platedetection:/opt/app/log -it --name reader img_reader
