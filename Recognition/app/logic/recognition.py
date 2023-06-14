@@ -63,8 +63,8 @@ class Recognition:
                     frame_name = os.path.basename(oldest_frame_path)
                     text = pytesseract.image_to_string(frame, lang="eng")
                     text = text.replace(" ", "")
+                    text = text.replace("\n", "")
                     if len(text)>1:
-                        text = text.replace("\n", "")
                         current_directory=os.getcwd()
                         os.chdir("/opt/app/static-files")
                         file = open("detected.txt","a")
